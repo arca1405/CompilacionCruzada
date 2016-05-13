@@ -92,7 +92,7 @@ Nuestro sistema objetivo esta descrito a continuacion.
 
 bla bla bla
 
-accedemos al directorio descomprimido y como la Raspberry Pi 2 es una tarjeta popular ya existe un archivo de configuracion paa esta tarjeta ( como tambien lo existe para la primera version y recientemente para la version 3)
+accedemos al directorio descomprimido y como la Raspberry Pi 2 es una tarjeta popular ya existe un archivo de configuracion paa esta tarjeta ( como tambien lo existe para la version 1 y recientemente para la version 3)
 
 Ahora simplemente hay que ejecutar el siguiente comando:
 
@@ -103,3 +103,5 @@ Ahora para agregar paquetes a nuestra compilacion simplemnte ejecutamos:
 	$ make menuconfig
 
 Donde nos muesta ventanas donde podemos elegir paquetes o opciones a compilar que previamente no incluia el archivo *"raspberrypi2_defconfig"*
+
+![uno](Imagenes/01.png "Pantalla inicial")
