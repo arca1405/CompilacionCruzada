@@ -7,43 +7,35 @@ La compilacion de codigo fuente realizado bajo una determinada arquitectura que 
 En la compilacion cruzada hay dos tipos de sistemas
 
 __*huesped*__
-:donde nos brinda la oportunidad de aprovechar los recursos que disponemos  
+:Nos brinda la oportunidad de aprovechar los recursos que disponemos, por lo general son arquitecturas mas poderosas (multicore)
 
 __*objetivo*__ :
 donde se ejecuta el codigo.
 
-para realizar este tipo de compilacion nos apoyamos de __Builroot__.
+para realizar este tipo de compilacion nos apoyamos de __toolchain__.
 
-## Builroot
+## toolchain
 
-Esta es una herramienta que simplifica y automatiza el proceso de construccion de un sistema embebido linux completo, usando compilacion cruzada.
+Es un conjunto de programas informáticos (herramientas) que se usan para crear un determinado producto (normalmente otro programa o sistema informático). Los distintos programas se suelen usar en una cadena, de modo que la salida de cada herramienta sea la entrada de la siguiente.
 
-### Requerimientos de sistemas
+### Componentes de toolchain
 
-Builroot esta diseñado para correr en sistema linux.
++ __GNU make__ Para la automatizacion de la estructura y compilado.
 
-Esta es una lista general de los paquetes obligatorios para ejecutar *builroot*:
++ __Compilador C:__ Es el segundo componente de un _toolchain_ , es el generador de codigo objeto (tanto de kernel como de aplicaciones)
 
-+ which
-+ sed
-+ make (version 3.81 or any later)
-+ binutils
-+ build-essential (only for Debian based systems)
-+ gcc (version 2.95 or any later)
-+ g++ (version 2.95 or any later)
-+ bash
-+ patch
-+ gzip
-+ bzip2
-+ perl (version 5.8.7 or any later)
-+ tar
-+ cpio
-+ python (version 2.6 or any later)
-+ unzip
-+ rsync
-+ wget
-+git
++ __GNU Binary:__  Es un conjunto de programas necesarios para la compilación, enlazado, ensamblado y depuración de código. Entre otros, los binarios principales son: ld (GNU linker), as (GNU assembler).
 
++ __Biblioteca C:__ La biblioteca de C implementa la API POSIX tradicional que se puede utilizar para desarrollar aplicaciones de espacio de usuario . Se conecta con el núcleo a través de llamadas al sistema , y proporciona servicios de mayor nivel.
+
++ __Debugger:__ El depurador también suelen formar parte del _toolchain_ , ya que se necesita un depurador cruzado para depurar aplicaciones se ejecutan en el equipo de destino. El depurador GDB es típico
+
+
+
+
+### toolchain Raspberry Pi
+
+Raspberry tiene un _toolchain_, lanzada por *Linaro*. Esta optimizada para los CPUs ARM recientes (cortex A8,A9).
 
 ## Compilacion para la Raspberry Pi 2
 
@@ -51,42 +43,48 @@ Esta es una lista general de los paquetes obligatorios para ejecutar *builroot*:
 
 A continuacion se muestra una descripcion del CPU que sera utilizado como *huesped*
 
-+ Architecture:          x86_64
++ Arquitectura:          x86_64
 + CPU op-mode(s):        32-bit, 64-bit
-+ Byte Order:            Little Endian
-+ CPU(s):                12
-+ On-line CPU(s) list:   0-11
-+ Thread(s) per core:    2
-+ Core(s) per socket:    6
++ Orden de bytes:        Little Endian
++ CPU(s):                4
++ On-line CPU(s) list:   0-3
++ Hilo(s) por núcleo:   2
++ Núcleo(s) por zócalo:2
 + Socket(s):             1
-+ NUMA node(s):          1
-+ Vendor ID:             GenuineIntel
-+ CPU family:            6
-+ Model:                 45
-+ Model name:            Intel(R) Xeon(R) CPU E5-2620 0 @ + 2.00GHz
++ Nodo(s) NUMA:          1
++ ID del vendedor:       GenuineIntel
++ Familia de CPU:        6
++ Modelo:                42
 + Stepping:              7
-+ CPU MHz:               1814.062
-+ BogoMIPS:              4000.22
-+ Virtualization:        VT-x
-+ L1d cache:             32K
-+ L1i cache:             32K
-+ L2 cache:              256K
-+ L3 cache:              15360K
-+ NUMA node0 CPU(s):     0-11
++ CPU MHz:               806.167
++ BogoMIPS:              4585.29
++ Virtualización:       VT-x
++ caché L1d:            32K
++ caché L1i:            32K
++ caché L2:             256K
++ caché L3:             3072K
++ NUMA node0 CPU(s):     0-3
 
-### Obtencion de buildroot
 
-Primero tenemos que obtener directamente de la pagina de buildroot
+### Obtencion del toolchain
 
-	$ wget https://buildroot.org/downloads/buildroot-2016.02.tar.gz
+Obtenemos las herramienta de la siguiente forma:
 
-### Descomprimir el archivo
+	$ git clone https://github.com/raspberrypi/tools
 
-Una vez que tenemos el archivo bastara con descomprimirlo
+posteriormente los agregamos al PATH
 
-	 $ tar xvzf buildroot-2016.02.tar.gz
+	PATH=/home/carlos/cross/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin:$PATH
 
-### Configuracion para Raspberry Pi 2
+### Obtener las fuentes
+
+Para obtener la fuente de linux lo clonamos de la siguiente manera:
+
+	$ git clone --depth=1 https://github.com/raspberrypi/linux
+
+
+
+### Contruyendo para la compilacion cruzada
 
 Nuestro sistema objetivo esta descrito a continuacion.
 
@@ -98,90 +96,66 @@ Nuestro sistema objetivo esta descrito a continuacion.
 + Core(s) per socket:    4
 + Socket(s):             1
 
-Accedemos al directorio descomprimido y como la Raspberry Pi 2 es una tarjeta popular ya existe un archivo de configuracion paa esta tarjeta ( como tambien lo existe para la version 1 y recientemente para la version 3)
+Para crear el archivo .config solo tenemos que seguir los siguientes pasos:
+
+	cd linux
+	KERNEL=kernel7
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
 
 Ahora simplemente hay que ejecutar el siguiente comando:
 
-	$ make raspberrypi2_defconfig
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs
 
-Ahora para agregar paquetes a nuestra compilacion simplemnte ejecutamos:
+Esto tomara un tiempo largo dependiendo del equipo husped. En mi caso fueron aproximadamente 30 min.
 
-	$ make menuconfig
+### Instalando a la SD
 
-Nos muesta ventanas donde podemos elegir paquetes o opciones de compilacion que previamente no incluia el archivo *"raspberrypi2_defconfig"* y podemos ver de manera grafica las opciones cargadas en el archivo __config__.
+Ahora que tenemos el kernel compilado el siguiente paso es copiarlo a la SD. Primero usamos:
 
-![uno](Imagenes/01.png "Pantalla inicial")
+	lsblk
 
-Entrando a la opcion de "Target Architecture" podemos notar que la arquitectura "ARM (little endian)" ya esta seleccionada debido al *"raspberrypi2_defconfig"*
+De esta manera identificar la SD, en mi caso esta de la siguiente manera:
 
-![dos](Imagenes/02.png "Target")
+	sdb
+		sdb1
+		sdb2
 
-Lo mismo sucede para la "Variante"
+montamos las particiones de la siguiente manera:
 
-![tres](Imagenes/03.png "Variant")
+	mkdir mnt/fat32
+	mkdir mnt/ext4
+	sudo mount /dev/sdb1 mnt/fat32
+	sudo mount /dev/sdb2 mnt/ext4
 
-Tambien tenemos las opciones de construir, donde se indica los directorios de descarga y host. Tambien el numero de trabajos que corren simultanemante y varias opciones que se pueden manipular para optimizar la construccion.
+Despues instalamos los modulos
 
-![cuatro](Imagenes/04.png "Build")
+	sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=mnt/ext4 modules_install
 
-Lo mismo ocurre para el "Toolchain", donde podemos indicar opciones para cabeceras del kernel (versiones), opciones de GCC como seria la version que queremos instalar en nuestro sistema.
+como ultimo paso copiamos el kernel y device tree
 
-![cinco](Imagenes/05.png "Toolchain")
-
-Asi como Suporte para otro lenguajes como C++ o compilar OpenMP (Que en mi caso activo ya que quiero trabajar con procesamiento paralelo)
-
-![seis](Imagenes/07.png "Toolchain continua")
-
-Otra opcion es "System Configuration", donde entre algunas de las opciones que se especifican son el "System banner", El tipo de codificacion de contraseñas, especificar si el login del root es con contraseña e indicar la misma.
-
-![siete](Imagenes/10.png "System")
-
-Para el "Kernel", podemos indicar de donde descargar el repositorio.
-
-![ocho](Imagenes/11.png "kernel")
-
-Otra opcion interesante es el "Target packages" donde podemos elegir paquetes que nos puedan ayudar en e objetivo de nuestro sistema embebido. Como estoy habituado a usar emacs decido instalar uemacs.
-
-![nueve](Imagenes/12.png "Target ")
-
-![diez](Imagenes/13.png "Target 2")
-
-Tambien podemos agregar leguajes interpretador o scripting, en mi caso decidi instalar "micropython"
-
-![once](Imagenes/14.png "Target  ")
-
-Finalmente ejecutamos el comando make y esperamos un tiempo (en mi caso 40 min)
-
-	$ make
-
-Pasado este tiempo obtenemos en la carpeta "output" tenemos los archivos que nos serviran para nuestro sistema embebido.
-
-Basta con copiar el archivo "sdcard.img" a una memoria SD sin forrmato. Esto lo podemos hacerlo mediante el comando "dd" ejecutandolo desde el directorio que contiene la imagen de la siguiente manera:
-
-	sudo dd if=sdcard.img of=/dev/sdb
+	sudo cp mnt/fat32/$KERNEL.img mnt/fat32/$KERNEL-backup.img
+	sudo scripts/mkknlimg arch/arm/boot/zImage mnt/fat32/$KERNEL.img
+	sudo cp arch/arm/boot/dts/*.dtb mnt/fat32/
+	sudo cp arch/arm/boot/dts/overlays/*.dtb* mnt/fat32/overlays/
+	sudo cp arch/arm/boot/dts/overlays/README mnt/fat32/overlays/
+	sudo umount mnt/fat32
+	sudo umount mnt/ext4
 
 ### Arranque del sistema
 
 Ahora con la SD lista ya podemos arrancar nuestro sistema embebido
 
-en la pantalla tenemos esto:
+Como comparacion tenemos el arranque de la version anterior del kernel
 
-![doce](Imagenes/14.JPG "Inicio")
+![old](Imagenes/old.JPG "Kernel antiguo")
 
-Se puede apreciar el banner personalizado:
+en donde se ve la version del kernel 4.4.9-v7
 
-![trece ](Imagenes/15.JPG "Inicio 2")
+Para la version nueva tenemos la siguiente imagen
+![new ](Imagenes/new.JPG "Kernel nuevo")
 
-En el siguiente archivo se presenta el arbol de directorios
+en donde se ve la version del kernel 4.4.10-v7
 
-![catorce](Imagenes/16.JPG "Inicio 3")
 
-Tambien podemos ver informacion del espacio usado
 
-![quince](Imagenes/17.JPG "Inicio 4")
-
-Y tambien informacion del sistema
-
-![dieciseis](Imagenes/18.JPG "Inicio 5")
-
-## ¡Ahora ya podemos probar nuestro sistema embebido! 
+## ¡Ahora ya podemos probar nuestro sistema embebido!
